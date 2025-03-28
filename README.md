@@ -91,6 +91,64 @@ node index.js
 - No user data is collected or stored
 - Server configurations (only channel IDs) are stored in a local JSON file
 
+## 🏠 Hosting Options
+### Hosting on Replit (Free Forever)
+Replit offers a free plan that's perfect for Discord bots:
+
+1. **Create a Replit Account**:
+   - Go to [Replit](https://replit.com/) and sign up for a free account
+
+2. **Create a New Repl**:
+   - Click "Create Repl"
+   - Select "Import from GitHub"
+   - Paste your GitHub repository URL or upload your files directly
+
+3. **Set Up Environment Variables**:
+   - Click on "Secrets" (lock icon) in the left sidebar
+   - Add your environment variables:
+     - Key: `DISCORD_TOKEN`, Value: `your_discord_bot_token`
+     - Key: `WEBHOOK_URL`, Value: `optional_webhook_url`
+
+4. **Configure for 24/7 Running**:
+   - Create a file called `keep_alive.js` in your project with:
+   ```javascript
+   const express = require('express');
+   const server = express();
+   
+   server.all('/', (req, res) => {
+     res.send('Bot is running!');
+   });
+   
+   function keepAlive() {
+     server.listen(3000, () => {
+       console.log("Server is ready!");
+     });
+   }
+   
+   module.exports = keepAlive;
+   ```
+   - Import it in your `index.js`:
+   ```javascript
+   const keepAlive = require('./keep_alive');
+   keepAlive();
+   // Rest of your bot code...
+   ```
+   
+5. **Set Up an Uptime Monitor**:
+   - Use a service like [UptimeRobot](https://uptimerobot.com/) (free)
+   - Create a new monitor and point it to your Repl URL (e.g., `https://your-repl-name.yourusername.repl.co`)
+   - Set it to ping every 5 minutes to keep your bot online
+
+6. **Run Your Bot**:
+   - Click "Run" and your bot should start
+   - The console will show if your bot connected successfully
+
+### Other Free Hosting Options
+- **Railway**: Offers 5 USD credit per month (free tier)
+- **Render**: Free tier for web services with some limitations
+- **Oracle Cloud Free Tier**: Provides free VM instances that never expire
+- **Fly.io**: Has a generous free tier suitable for small applications
+
 ## 📜 License
 This project is open source and available under the MIT License.
 
