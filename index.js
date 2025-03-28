@@ -5,6 +5,10 @@ import { Client, Collection, Events, GatewayIntentBits, REST, Routes } from 'dis
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { keepAlive } from './keep_alive.js';
+
+// Start the keep-alive server
+keepAlive();
 
 // Fix ESM path issues on Windows
 const __filename = fileURLToPath(import.meta.url);
