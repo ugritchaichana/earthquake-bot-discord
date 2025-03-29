@@ -21,7 +21,9 @@ export async function connectDB() {
       tlsAllowInvalidCertificates: true,
       retryWrites: true,
       w: 'majority',
-      retryReads: true
+      retryReads: true,
+      tlsInsecure: true,
+      directConnection: true
     });
 
     // Test the connection
@@ -58,7 +60,11 @@ export async function getChannels() {
     const channels = await db.collection('channels').find({}).toArray();
     console.log(`[MongoDB] Found ${channels.length} channels in database`);
     return channels.reduce((acc, channel) => {
-      acc[channel.guildId] = channel.channelId;
+      acc[channel.guildId] = {
+        channelId: channel.channelId,
+        channelName: channel.channelName,
+        guildName: channel.guildName
+      };
       return acc;
     }, {});
   } catch (error) {
@@ -69,13 +75,21 @@ export async function getChannels() {
   }
 }
 
-export async function setChannel(guildId, channelId) {
+export async function setChannel(guildId, channelId, channelName, guildName) {
   try {
-    console.log(`[MongoDB] Setting channel ${channelId} for guild ${guildId}...`);
+    console.log(`[MongoDB] Setting channel ${channelName} (${channelId}) for guild ${guildName} (${guildId})...`);
     const db = await connectDB();
     const result = await db.collection('channels').updateOne(
       { guildId },
-      { $set: { guildId, channelId } },
+      { 
+        $set: { 
+          guildId,
+          channelId,
+          channelName,
+          guildName,
+          updatedAt: new Date()
+        }
+      },
       { upsert: true }
     );
     console.log(`[MongoDB] Channel set successfully. Modified: ${result.modifiedCount}, Upserted: ${result.upsertedCount}`);

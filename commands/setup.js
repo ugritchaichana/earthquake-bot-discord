@@ -56,8 +56,13 @@ export default {
 
     // Save channel to MongoDB
     try {
-      await setChannel(interaction.guild.id, channel.id);
-      console.log(`[Setup] Channel ${channel.id} set for guild ${interaction.guild.id} (${interaction.guild.name})`);
+      await setChannel(
+        interaction.guild.id,
+        channel.id,
+        channel.name,
+        interaction.guild.name
+      );
+      console.log(`[Setup] Channel ${channel.name} (${channel.id}) set for guild ${interaction.guild.name} (${interaction.guild.id})`);
     } catch (error) {
       console.error('[Setup] Error saving channel to database:', error);
       if (interaction.deferred) {
