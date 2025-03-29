@@ -39,10 +39,18 @@ export default {
         });
       } catch (error) {
         console.error('Error creating channel:', error);
-        return interaction.editReply({
-          content: `❌ Failed to create channel #${channelName}. Please check my permissions and try again.`,
-          flags: 64
-        });
+        if (interaction.deferred) {
+          await interaction.editReply({
+            content: `❌ Failed to create channel #${channelName}. Please check my permissions and try again.`,
+            flags: 64
+          });
+        } else {
+          await interaction.reply({
+            content: `❌ Failed to create channel #${channelName}. Please check my permissions and try again.`,
+            flags: 64
+          });
+        }
+        return;
       }
     }
 
@@ -52,10 +60,18 @@ export default {
       console.log(`[Setup] Channel ${channel.id} set for guild ${interaction.guild.id} (${interaction.guild.name})`);
     } catch (error) {
       console.error('[Setup] Error saving channel to database:', error);
-      return interaction.reply({
-        content: '❌ Failed to save channel configuration. Please try again.',
-        flags: 64
-      });
+      if (interaction.deferred) {
+        await interaction.editReply({
+          content: '❌ Failed to save channel configuration. Please try again.',
+          flags: 64
+        });
+      } else {
+        await interaction.reply({
+          content: '❌ Failed to save channel configuration. Please try again.',
+          flags: 64
+        });
+      }
+      return;
     }
 
     const response = channel.id !== interaction.channelId
@@ -63,7 +79,7 @@ export default {
       : `✅ Earthquake alerts will be sent to this channel!`;
       
     if (interaction.deferred) {
-      await interaction.followUp({
+      await interaction.editReply({
         content: response,
         flags: 64
       });
