@@ -1,12 +1,20 @@
 import express from 'express';
-const server = express();
+const app = express();
+const port = process.env.PORT || 3000;
 
-server.all('/', (req, res) => {
+app.get('/', (req, res) => {
   res.send('Earthquake Bot is running!');
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+app.listen(port, () => {
+  console.log(`Server is ready on port ${port}!`);
+});
+
 export function keepAlive() {
-  server.listen(3000, () => {
-    console.log("Server is ready on port 3000!");
-  });
+  // This function is called from index.js
+  console.log('Keep-alive server started');
 }

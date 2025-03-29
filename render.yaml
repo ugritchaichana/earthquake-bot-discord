@@ -10,4 +10,11 @@ services:
       - key: CHANNEL_ID
         sync: false
       - key: WEBHOOK_URL
-        sync: false 
+        sync: false
+    healthCheckPath: /health
+    autoDeploy: true
+    plan: free
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1 
