@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { keepAlive } from './keep_alive.js';
+import { getChannels } from './db.js';
 
 // Start the keep-alive server
 keepAlive();
@@ -62,14 +63,40 @@ function formatTime(timestamp) {
   const date = new Date(timestamp);
   return date.toLocaleString('en-US', {
     timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour12: true
+    second: '2-digit'
   });
+}
+
+function isNearThailand(coordinates) {
+  // Bangkok coordinates
+  const BANGKOK_LAT = 13.7563;
+  const BANGKOK_LON = 100.5018;
+  
+  // Convert coordinates to radians
+  const lat1 = coordinates[1] * Math.PI / 180;
+  const lon1 = coordinates[0] * Math.PI / 180;
+  const lat2 = BANGKOK_LAT * Math.PI / 180;
+  const lon2 = BANGKOK_LON * Math.PI / 180;
+  
+  // Earth's radius in kilometers
+  const R = 6371;
+  
+  // Calculate distance using Haversine formula
+  const dLat = lat2 - lat1;
+  const dLon = lon2 - lon1;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1) * Math.cos(lat2) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c;
+  
+  // Return true if earthquake is within 1000km of Bangkok
+  return distance <= 1000;
 }
 
 async function checkEarthquakes() {
@@ -89,60 +116,77 @@ async function checkEarthquakes() {
     
     // Process earthquakes in reverse chronological order (newest first)
     for (const earthquake of data.features.reverse()) {
-      if (!processedEarthquakes.has(earthquake.id) && earthquake.properties.mag >= 4.0) {
+      const coordinates = earthquake.geometry.coordinates;
+      const magnitude = earthquake.properties.mag;
+      
+      // Check if earthquake is significant (magnitude >= 4.0) or near Thailand
+      if (!processedEarthquakes.has(earthquake.id) && 
+          (magnitude >= 4.0 || (magnitude >= 3.0 && isNearThailand(coordinates)))) {
         processedEarthquakes.add(earthquake.id);
         
-        const channel = await client.channels.fetch(process.env.CHANNEL_ID);
-        if (channel) {
-          const magnitude = earthquake.properties.mag.toFixed(1);
-          const location = earthquake.properties.place;
-          const time = formatTime(earthquake.properties.time);
-          const coordinates = earthquake.geometry.coordinates;
-          const depth = coordinates[2].toFixed(1);
-          
-          const embed = {
-            title: '🌍 Earthquake Alert',
-            description: `**Location:** ${location}\n**Time:** ${time}`,
-            color: getMagnitudeColor(parseFloat(magnitude)),
-            fields: [
-              {
-                name: 'Magnitude',
-                value: `**${magnitude}** Richter`,
-                inline: true
-              },
-              {
-                name: 'Depth',
-                value: `${depth} km`,
-                inline: true
-              },
-              {
-                name: 'Coordinates',
-                value: `${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}`,
-                inline: true
+        // Get channels from MongoDB
+        const channels = await getChannels();
+        console.log(`[Earthquake] Found ${Object.keys(channels).length} channels to notify`);
+
+        // Send alert to all configured channels
+        for (const [guildId, channelId] of Object.entries(channels)) {
+          try {
+            const channel = await client.channels.fetch(channelId);
+            if (channel) {
+              const magnitude = earthquake.properties.mag.toFixed(1);
+              const location = earthquake.properties.place;
+              const time = formatTime(earthquake.properties.time);
+              const coordinates = earthquake.geometry.coordinates;
+              const depth = coordinates[2].toFixed(1);
+              
+              const embed = {
+                title: '🌍 Earthquake Alert',
+                description: `**Location:** ${location}\n**Time:** ${time}`,
+                color: getMagnitudeColor(parseFloat(magnitude)),
+                fields: [
+                  {
+                    name: 'Magnitude',
+                    value: `**${magnitude}** Richter`,
+                    inline: true
+                  },
+                  {
+                    name: 'Depth',
+                    value: `${depth} km`,
+                    inline: true
+                  },
+                  {
+                    name: 'Coordinates',
+                    value: `${coordinates[1].toFixed(4)}, ${coordinates[0].toFixed(4)}`,
+                    inline: true
+                  }
+                ],
+                thumbnail: {
+                  url: `https://earthquake.usgs.gov/images/globes/${Math.round(coordinates[1])}${Math.round(coordinates[0])}/en-US.jpg`
+                },
+                footer: {
+                  text: 'Data from USGS Earthquake Hazards Program',
+                  icon_url: 'https://earthquake.usgs.gov/theme/images/logo.png'
+                },
+                timestamp: new Date(earthquake.properties.time).toISOString()
+              };
+
+              let alertContent = '🚨 **Earthquake Alert** 🚨';
+              
+              if (parseFloat(magnitude) >= 6.0) {
+                alertContent = '@everyone 🚨 **Major Earthquake Alert** 🚨';
+              } else if (parseFloat(magnitude) >= 5.0) {
+                alertContent = '@everyone 🚨 **Earthquake Alert** 🚨';
               }
-            ],
-            thumbnail: {
-              url: `https://earthquake.usgs.gov/images/globes/${Math.round(coordinates[1])}${Math.round(coordinates[0])}/en-US.jpg`
-            },
-            footer: {
-              text: 'Data from USGS Earthquake Hazards Program',
-              icon_url: 'https://earthquake.usgs.gov/theme/images/logo.png'
-            },
-            timestamp: new Date(earthquake.properties.time).toISOString()
-          };
 
-          let alertContent = '🚨 **Earthquake Alert** 🚨';
-          
-          if (parseFloat(magnitude) >= 6.0) {
-            alertContent = '@everyone 🚨 **Major Earthquake Alert** 🚨';
-          } else if (parseFloat(magnitude) >= 5.0) {
-            alertContent = '@everyone 🚨 **Earthquake Alert** 🚨';
+              await channel.send({
+                content: alertContent,
+                embeds: [embed]
+              });
+              console.log(`[Earthquake] Alert sent to channel ${channelId} in guild ${guildId}`);
+            }
+          } catch (error) {
+            console.error(`[Earthquake] Error sending alert to channel ${channelId}:`, error);
           }
-
-          await channel.send({
-            content: alertContent,
-            embeds: [embed]
-          });
         }
       }
     }
@@ -156,26 +200,26 @@ async function checkEarthquakes() {
     }
 
   } catch (error) {
-    console.error('Error checking earthquakes:', error);
+    console.error('[Earthquake] Error checking earthquakes:', error);
   }
 }
 
 // Register slash commands when bot starts
 client.once(Events.ClientReady, async c => {
-  console.log(`Bot is ready! Logged in as ${c.user.tag}`);
+  console.log(`[Bot] Ready! Logged in as ${c.user.tag}`);
   
   try {
     const rest = new REST().setToken(process.env.DISCORD_TOKEN);
-    console.log('Refreshing application (/) commands...');
+    console.log('[Bot] Refreshing application (/) commands...');
     
     await rest.put(
       Routes.applicationCommands(c.user.id),
       { body: commands },
     );
     
-    console.log('Successfully refreshed application (/) commands.');
+    console.log('[Bot] Successfully refreshed application (/) commands.');
   } catch (error) {
-    console.error(error);
+    console.error('[Bot] Error refreshing commands:', error);
   }
   
   // Initial check
@@ -192,32 +236,32 @@ client.on(Events.InteractionCreate, async interaction => {
   const command = client.commands.get(interaction.commandName);
 
   if (!command) {
-    console.error(`No command matching ${interaction.commandName} was found.`);
+    console.error(`[Command] No command matching ${interaction.commandName} was found.`);
     return;
   }
 
   try {
     await command.execute(interaction);
   } catch (error) {
-    console.error(`Error executing command ${interaction.commandName}:`, error);
+    console.error(`[Command] Error executing command ${interaction.commandName}:`, error);
     
     if (interaction.replied) {
       await interaction.followUp({ 
         content: 'An error occurred while executing this command. Please try again.', 
         flags: 64
-      }).catch(e => console.error('Error sending followUp:', e));
+      }).catch(e => console.error('[Command] Error sending followUp:', e));
     } else if (interaction.deferred) {
       await interaction.editReply({ 
         content: 'An error occurred while executing this command. Please try again.' 
-      }).catch(e => console.error('Error sending editReply:', e));
+      }).catch(e => console.error('[Command] Error sending editReply:', e));
     } else {
       await interaction.reply({ 
         content: 'An error occurred while executing this command. Please try again.', 
         flags: 64
-      }).catch(e => console.error('Error sending reply:', e));
+      }).catch(e => console.error('[Command] Error sending reply:', e));
     }
   }
 });
 
-// Login to Discord with the bot token
+// Login to Discord
 client.login(process.env.DISCORD_TOKEN);

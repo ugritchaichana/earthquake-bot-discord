@@ -13,6 +13,8 @@ services:
         sync: false
       - key: RENDER_URL
         value: https://earthquake-bot-discord.onrender.com
+      - key: MONGODB_URI
+        sync: false
     healthCheckPath: /health
     autoDeploy: true
     plan: free

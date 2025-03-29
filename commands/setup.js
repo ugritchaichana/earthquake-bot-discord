@@ -1,11 +1,5 @@
 import { SlashCommandBuilder, ChannelType, PermissionFlagsBits } from 'discord.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Get __dirname equivalent in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { setChannel } from '../db.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -25,7 +19,7 @@ export default {
     // If channel doesn't exist, create it
     if (!channel) {
       try {
-        await interaction.deferReply({ flags: 64 }); // 64 is ephemeral flag
+        await interaction.deferReply({ flags: 64 });
         
         channel = await interaction.guild.channels.create({
           name: channelName,
@@ -52,18 +46,17 @@ export default {
       }
     }
 
-    const dbPath = path.join(path.dirname(__dirname), 'channels.json');
-    let channels = {};
-
+    // Save channel to MongoDB
     try {
-      const data = fs.readFileSync(dbPath, 'utf8');
-      channels = JSON.parse(data);
-    } catch (err) {
-      // File doesn't exist yet
+      await setChannel(interaction.guild.id, channel.id);
+      console.log(`[Setup] Channel ${channel.id} set for guild ${interaction.guild.id} (${interaction.guild.name})`);
+    } catch (error) {
+      console.error('[Setup] Error saving channel to database:', error);
+      return interaction.reply({
+        content: '❌ Failed to save channel configuration. Please try again.',
+        flags: 64
+      });
     }
-
-    channels[interaction.guild.id] = channel.id;
-    fs.writeFileSync(dbPath, JSON.stringify(channels, null, 2));
 
     const response = channel.id !== interaction.channelId
       ? `✅ Earthquake alerts will be sent to <#${channel.id}>!`
