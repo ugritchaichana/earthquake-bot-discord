@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.js",
-    "deploy": "git add . && git commit -m \"Deploy to Render\" && git push"
+    "deploy": "git add . && git commit -m \"Deploy to Render\" && git push",
+    "ping": "node ping.js"
   },
   "keywords": ["discord", "bot", "earthquake", "alert"],
   "author": "",

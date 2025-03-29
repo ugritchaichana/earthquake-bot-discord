@@ -11,10 +11,20 @@ services:
         sync: false
       - key: WEBHOOK_URL
         sync: false
+      - key: RENDER_URL
+        value: https://earthquake-bot-discord.onrender.com
     healthCheckPath: /health
     autoDeploy: true
     plan: free
     disk:
       name: data
       mountPath: /data
-      sizeGB: 1 
+      sizeGB: 1
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.js 
