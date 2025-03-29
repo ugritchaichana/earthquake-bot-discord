@@ -25,7 +25,7 @@ export default {
     // If channel doesn't exist, create it
     if (!channel) {
       try {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: 64 }); // 64 is ephemeral flag
         
         channel = await interaction.guild.channels.create({
           name: channelName,
@@ -41,13 +41,13 @@ export default {
         
         await interaction.editReply({
           content: `✅ Channel #${channelName} didn't exist, so I created it for you!`,
-          ephemeral: true
+          flags: 64
         });
       } catch (error) {
         console.error('Error creating channel:', error);
         return interaction.editReply({
           content: `❌ Failed to create channel #${channelName}. Please check my permissions and try again.`,
-          ephemeral: true
+          flags: 64
         });
       }
     }
@@ -72,12 +72,12 @@ export default {
     if (interaction.deferred) {
       await interaction.followUp({
         content: response,
-        ephemeral: true
+        flags: 64
       });
     } else {
       await interaction.reply({
         content: response,
-        ephemeral: true
+        flags: 64
       });
     }
   }

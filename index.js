@@ -204,7 +204,7 @@ client.on(Events.InteractionCreate, async interaction => {
     if (interaction.replied) {
       await interaction.followUp({ 
         content: 'An error occurred while executing this command. Please try again.', 
-        ephemeral: true 
+        flags: 64
       }).catch(e => console.error('Error sending followUp:', e));
     } else if (interaction.deferred) {
       await interaction.editReply({ 
@@ -213,7 +213,7 @@ client.on(Events.InteractionCreate, async interaction => {
     } else {
       await interaction.reply({ 
         content: 'An error occurred while executing this command. Please try again.', 
-        ephemeral: true 
+        flags: 64
       }).catch(e => console.error('Error sending reply:', e));
     }
   }
