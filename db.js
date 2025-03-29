@@ -18,11 +18,9 @@ export async function connectDB() {
       socketTimeoutMS: 45000,
       ssl: true,
       tls: true,
-      tlsAllowInvalidCertificates: true,
       retryWrites: true,
       w: 'majority',
       retryReads: true,
-      tlsInsecure: true,
       directConnection: true
     });
 
