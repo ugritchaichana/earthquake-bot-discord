@@ -176,5 +176,6 @@ This bot is designed for Discord servers only and does not support private chat 
 
 ---
 
-Developed by [Your Name/Organization]  
-For more information or to report issues, please contact [your-email/contact]
+Developed by [Ugrit Chaichana]  
+For more information or to report issues, please contact [ugritchaichana13@gmail.com]
+Discord : [leidenb_]
