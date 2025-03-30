@@ -17,11 +17,10 @@ export async function connectDB() {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
       ssl: true,
-      tls: true,
+      tlsAllowInvalidCertificates: true,
       retryWrites: true,
       w: 'majority',
-      retryReads: true,
-      directConnection: true
+      retryReads: true
     });
 
     // Test the connection
