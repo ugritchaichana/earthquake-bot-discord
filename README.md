@@ -1,164 +1,180 @@
-# Earthquake Alert Discord Bot
+# Earthquake Bot for Discord
 
-## 🌍 What is this?
-A real-time earthquake monitoring and alert system for Discord that focuses on Thailand and Southeast Asia but tracks significant global seismic events. This bot fetches data from USGS (United States Geological Survey) and sends timely, informative alerts to your Discord server.
+A Discord bot that monitors earthquake data from the USGS (United States Geological Survey) and sends real-time alerts to designated Discord channels.
 
-## 🎯 Purpose
-This bot was created to:
-- Provide real-time earthquake notifications to Thai communities and those in Southeast Asia
-- Help with early awareness of seismic events that may affect Thailand
-- Deliver accurate information in an easy-to-understand format
-- Support emergency awareness during significant seismic events
+## Features
 
-## ⚙️ Technical Overview
-### Built With
-- **Node.js** - Server-side JavaScript runtime
-- **Discord.js** - Library for interacting with Discord API
-- **USGS Earthquake API** - Real-time earthquake data source
+- Real-time earthquake monitoring from USGS data feed
+- Customizable regional focus (Global, Thailand, Southeast Asia, Asia)
+- Magnitude filtering based on region
+- Rich embed messages with color-coding based on earthquake severity
+- Auto-creation of notification channels
+- Distance calculation from Bangkok for Thailand-focused alerts
+- Persistent configuration storage with MongoDB
 
-### Features
-- **Real-time Monitoring**: Checks for new earthquakes every 30 seconds
-- **Smart Filtering**: Focuses on earthquakes relevant to Thailand and Southeast Asia
-- **Alert Levels**: Categorizes earthquakes by severity and proximity to Thailand
-- **Distance Calculation**: Shows how far earthquakes are from Bangkok
-- **Interactive Commands**: Allows users to query recent earthquake data
-- **Custom Channel Setup**: Configurable notification channel for each server
+## User Guide
 
-## 📋 Commands
-- `/setup [channel]` - Configure where to send earthquake alerts
-- `/data-latest [count] [region]` - View latest earthquakes with optional filters
-  - `count`: Number of earthquakes to display (1-5)
-  - `region`: Filter by region (Global, Thailand Region, Southeast Asia)
+### Getting Started
 
-## 🔧 Installation & Setup
+1. **Invite the bot to your server**
+   - Click on the bot invite link (contact the bot administrator for the invite link)
+   - Select the server you want to add the bot to
+   - Ensure the bot has the necessary permissions (read/send messages, create/manage channels)
+
+2. **Set up a notification channel**
+   - Use the command `/setup channel:[channel_name] region:[region]`
+   - Example: `/setup channel:earthquake-alerts region:thailand`
+   - The bot will send earthquake alerts to the specified channel
+   - If the specified channel doesn't exist, the bot will create it automatically
+
+3. **Choose a region of interest**
+   - You can select from 4 different regions to receive alerts:
+     - `global`: Worldwide (earthquakes ≥ 4.0 magnitude)
+     - `thailand`: Thailand and surrounding areas (within 2,200 km radius, ≥ 3.0 magnitude)
+     - `sea`: Southeast Asia (≥ 3.5 magnitude)
+     - `asia`: Asian continent (≥ 3.8 magnitude)
+
+### Available Commands
+
+- `/setup channel:[channel_name] region:[region]` - Set up a channel for earthquake alerts
+- `/remove` - Disable earthquake alerts for the server
+- `/data-latest` - Display the latest earthquake data from USGS
+
+### Earthquake Notifications
+
+The bot sends real-time notifications when earthquakes match your configured criteria:
+
+- Earthquake details are displayed in embeds with colors varying by severity
+- Information includes: location, time, magnitude, depth, coordinates
+- For Thailand region, distance from Bangkok is also displayed
+- Large earthquakes (≥ 5.0 magnitude) trigger @everyone mentions
+
+### Private Chat Usage
+
+This bot is designed for Discord servers only and does not support private chat interactions.
+
+## Developer Guide
 
 ### Prerequisites
-- Node.js (v16.9.0 or higher)
-- Discord Bot Token ([Discord Developer Portal](https://discord.com/developers/applications))
-- npm or pnpm package manager
 
-### Step 1: Clone the repository
-```bash
-git clone https://github.com/yourusername/earthquake-bot-discord.git
-cd earthquake-bot-discord
-```
+- Node.js version 18 or higher
+- MongoDB (for storing channel settings)
+- Discord Bot Token
 
-### Step 2: Install dependencies
-Using npm:
-```bash
-npm install
-```
-Or using pnpm:
-```bash
-pnpm install
-```
+### Environment Setup
 
-### Step 3: Set up environment variables
-Create a `.env` file in the root directory with:
-```
-DISCORD_TOKEN=your_discord_bot_token
-WEBHOOK_URL=optional_webhook_url
-```
-
-### Step 4: Register your bot with Discord
-1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
-2. Create a new application
-3. Add a bot to your application
-4. Enable MESSAGE CONTENT INTENT in the Bot section
-5. Generate an invite URL with bot and applications.commands scopes
-6. Invite the bot to your server
-
-### Step 5: Start the bot
-```bash
-npm start
-```
-Or:
-```bash
-node index.js
-```
-
-## 📡 How It Works
-1. The bot connects to USGS earthquake data feeds
-2. Every 30 seconds, it checks for new earthquakes
-3. When a relevant earthquake is detected:
-   - It calculates the distance from Bangkok
-   - Determines the alert level based on magnitude and proximity
-   - Sends a detailed embed message to configured channels
-4. For earthquakes near Thailand or of high magnitude, the bot can tag @everyone for immediate attention
-
-## 🔒 Privacy & Data Usage
-- This bot only processes publicly available USGS earthquake data
-- No user data is collected or stored
-- Server configurations (only channel IDs) are stored in a local JSON file
-
-## 🏠 Hosting Options
-### Hosting on Replit (Free Forever)
-Replit offers a free plan that's perfect for Discord bots:
-
-1. **Create a Replit Account**:
-   - Go to [Replit](https://replit.com/) and sign up for a free account
-
-2. **Create a New Repl**:
-   - Click "Create Repl"
-   - Select "Import from GitHub"
-   - Paste your GitHub repository URL or upload your files directly
-
-3. **Set Up Environment Variables**:
-   - Click on "Secrets" (lock icon) in the left sidebar
-   - Add your environment variables:
-     - Key: `DISCORD_TOKEN`, Value: `your_discord_bot_token`
-     - Key: `WEBHOOK_URL`, Value: `optional_webhook_url`
-
-4. **Configure for 24/7 Running**:
-   - Create a file called `keep_alive.js` in your project with:
-   ```javascript
-   const express = require('express');
-   const server = express();
-   
-   server.all('/', (req, res) => {
-     res.send('Bot is running!');
-   });
-   
-   function keepAlive() {
-     server.listen(3000, () => {
-       console.log("Server is ready!");
-     });
-   }
-   
-   module.exports = keepAlive;
+1. Clone or download the project
+   ```bash
+   git clone https://github.com/yourusername/earthquake-bot-discord.git
+   cd earthquake-bot-discord
    ```
-   - Import it in your `index.js`:
-   ```javascript
-   const keepAlive = require('./keep_alive');
-   keepAlive();
-   // Rest of your bot code...
+
+2. Install Dependencies 
+   ```bash
+   pnpm install
    ```
-   
-5. **Set Up an Uptime Monitor**:
-   - Use a service like [UptimeRobot](https://uptimerobot.com/) (free)
-   - Create a new monitor and point it to your Repl URL (e.g., `https://your-repl-name.yourusername.repl.co`)
-   - Set it to ping every 5 minutes to keep your bot online
+   (or `npm install` if not using pnpm)
 
-6. **Run Your Bot**:
-   - Click "Run" and your bot should start
-   - The console will show if your bot connected successfully
+3. Create `.env` file based on `.env.example`
+   ```bash
+   cp .env.example .env
+   ```
+   Then edit the `.env` file to add your credentials:
+   ```
+   DISCORD_TOKEN=your_discord_bot_token
+   MONGODB_URI=your_mongodb_connection_string
+   PORT=3000
+   ```
 
-### Other Free Hosting Options
-- **Railway**: Offers 5 USD credit per month (free tier)
-- **Render**: Free tier for web services with some limitations
-- **Oracle Cloud Free Tier**: Provides free VM instances that never expire
-- **Fly.io**: Has a generous free tier suitable for small applications
+### Project Structure
 
-## 📜 License
-This project is open source and available under the MIT License.
+- `index.js` - Main bot file
+- `db.js` - MongoDB connection and functions
+- `keep_alive.js` - Express server to prevent the bot from sleeping on Render
+- `commands/` - Folder containing bot commands (setup.js, remove.js, data-latest.js)
+- `render.yaml` - Configuration file for deployment on Render
 
-## 👥 Contributing
-Contributions, issues, and feature requests are welcome! Feel free to check issues page.
+### Development
 
-## 🙏 Acknowledgements
-- [USGS Earthquake Hazards Program](https://earthquake.usgs.gov/) for providing open access to earthquake data
-- [Discord.js](https://discord.js.org/) for their excellent API wrapper
+1. **Starting the bot in development mode**
+   ```bash
+   pnpm start
+   ```
+   (or `npm start` if not using pnpm)
+
+2. **Adding new commands**
+   - Create a new file in the `commands/` folder
+   - Use the same structure as existing commands (data, execute)
+   - The bot will automatically load new commands when restarted
+
+3. **Customizing earthquake detection**
+   - Modify values in the `REGIONS` object to adjust alert thresholds
+   - Update the `getMagnitudeColor()` function to change alert colors
+   - Edit the `checkEarthquakes()` function to adjust detection and notification logic
+
+### Deployment on Render
+
+1. **Preparation**
+   - Ensure you have a `render.yaml` file in your project
+   - Include `keep_alive.js` to prevent the bot from sleeping
+
+2. **Deployment Steps**
+   - Create an account on [Render](https://render.com)
+   - Connect with your GitHub repository
+   - Create a new Web Service by selecting "Blueprint"
+   - Select your bot repository
+   - Render will detect the `render.yaml` and set up automatically
+
+3. **Configure Environment Variables on Render**
+   - DISCORD_TOKEN: Discord Bot Token
+   - MONGODB_URI: MongoDB Connection String
+   - CHANNEL_ID: (Optional, used for setting a default channel)
+   - WEBHOOK_URL: (Optional, used for Discord Webhook)
+
+4. **Keeping the bot always on**
+   - The bot has a built-in keep-alive system that prevents Render from stopping the server
+   - It sends a ping every 14 minutes to keep the bot running
+   - If MongoDB connection has issues, the bot will try to reconnect automatically
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **Bot not responding to commands**
+   - Make sure your `DISCORD_TOKEN` is correct
+   - Check logs for errors
+   - Verify the bot has necessary permissions in the server
+
+2. **Not receiving earthquake alerts**
+   - Verify you have set up a channel using the `/setup` command
+   - Check if there have been earthquakes that match your configured criteria
+   - Check MongoDB connection
+
+3. **MongoDB connection issues**
+   - Verify your `MONGODB_URI` is correct
+   - Check if your deployment IP is whitelisted in MongoDB Atlas
+
+#### Viewing Error Logs
+
+- **On Render**: Go to the Render dashboard and check "Logs" of your server
+- **Local development**: Check console output
+
+## API References
+
+1. **Discord.js API**: 
+   - [Discord.js Documentation](https://discord.js.org/)
+   - Used for interacting with the Discord API
+
+2. **USGS Earthquake API**: 
+   - [USGS API Documentation](https://earthquake.usgs.gov/fdsnws/event/1/)
+   - Used for fetching real-time earthquake data
+   - Endpoint used: `https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson`
+
+3. **MongoDB API**:
+   - [MongoDB Node.js Driver](https://mongodb.github.io/node-mongodb-native/)
+   - Used for storing notification channel settings
 
 ---
 
-*Note: This bot is intended for informational purposes only. In case of an actual earthquake emergency, please follow official government guidance and emergency protocols.*
+Developed by [Your Name/Organization]  
+For more information or to report issues, please contact [your-email/contact]
