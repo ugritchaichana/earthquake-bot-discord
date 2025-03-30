@@ -1,8 +1,7 @@
-import express from 'express';
-import fetch from 'node-fetch';
+const express = require('express');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 const app = express();
-const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
   res.send('Earthquake Bot is running!');
@@ -16,11 +15,7 @@ app.get('/ping', (req, res) => {
   res.status(200).send('PONG');
 });
 
-app.listen(port, () => {
-  console.log(`Server is ready on port ${port}!`);
-});
-
-export function keepAlive() {
+function keepAlive() {
   const RENDER_URL = 'https://earthquake-bot-discord.onrender.com';
   
   // Set up interval to ping the server every 14 minutes
@@ -36,4 +31,9 @@ export function keepAlive() {
   }, 14 * 60 * 1000); // 14 minutes
 
   console.log('Keep-alive server started');
+  
+  // Return the app for use in index.js
+  return app;
 }
+
+module.exports = { keepAlive };

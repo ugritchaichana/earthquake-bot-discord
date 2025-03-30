@@ -1,17 +1,29 @@
-import { SlashCommandBuilder, ChannelType, PermissionFlagsBits } from 'discord.js';
-import { setChannel } from '../db.js';
+const { SlashCommandBuilder, ChannelType, PermissionFlagsBits } = require('discord.js');
+const { setChannel } = require('../db.js');
 
-export default {
+module.exports = {
   data: new SlashCommandBuilder()
     .setName('setup')
     .setDescription('Set earthquake alert channel')
     .addStringOption(option =>
       option.setName('channel')
         .setDescription('Text channel name for earthquake alerts')
-        .setRequired(true)),
+        .setRequired(true))
+    .addStringOption(option =>
+      option.setName('region')
+        .setDescription('Region to focus for earthquake alerts')
+        .setRequired(false)
+        .addChoices(
+          { name: 'Global', value: 'global' },
+          { name: 'Thailand Region', value: 'thailand' },
+          { name: 'Southeast Asia', value: 'sea' },
+          { name: 'Asia', value: 'asia' }
+        )),
 
   async execute(interaction) {
     const channelName = interaction.options.getString('channel');
+    const focusRegion = interaction.options.getString('region') || 'global'; // ดึงค่า region ที่เลือก หรือใช้ค่าเริ่มต้นเป็น global
+    
     let channel = interaction.guild.channels.cache.find(
       ch => ch.name === channelName && ch.isTextBased()
     );
@@ -56,23 +68,42 @@ export default {
 
     // Save channel to MongoDB
     try {
-      await setChannel(
+      const result = await setChannel(
         interaction.guild.id,
         channel.id,
         channel.name,
-        interaction.guild.name
+        interaction.guild.name,
+        focusRegion
       );
-      console.log(`[Setup] Channel ${channel.name} (${channel.id}) set for guild ${interaction.guild.name} (${interaction.guild.id})`);
+      
+      if (result === false) {
+        console.log(`[Setup] Channel ${channel.name} (${channel.id}) data has been stored for future saving when MongoDB connection is restored`);
+        
+        if (interaction.deferred) {
+          await interaction.editReply({
+            content: `✅ Earthquake alerts will be sent to <#${channel.id}>!\nFocus region: **${focusRegion.charAt(0).toUpperCase() + focusRegion.slice(1)}**\n⚠️ Note: Your configuration will be stored when database connection is restored.`,
+            flags: 64
+          });
+        } else {
+          await interaction.reply({
+            content: `✅ Earthquake alerts will be sent to <#${channel.id}>!\nFocus region: **${focusRegion.charAt(0).toUpperCase() + focusRegion.slice(1)}**\n⚠️ Note: Your configuration will be stored when database connection is restored.`,
+            flags: 64
+          });
+        }
+        return;
+      }
+      
+      console.log(`[Setup] Channel ${channel.name} (${channel.id}) set for guild ${interaction.guild.name} (${interaction.guild.id}) with focus region: ${focusRegion}`);
     } catch (error) {
       console.error('[Setup] Error saving channel to database:', error);
       if (interaction.deferred) {
         await interaction.editReply({
-          content: '❌ Failed to save channel configuration. Please try again.',
+          content: `✅ Earthquake alerts will be sent to <#${channel.id}>!\n⚠️ Note: There was an issue saving to the database, but your configuration will be stored when connection is restored.`,
           flags: 64
         });
       } else {
         await interaction.reply({
-          content: '❌ Failed to save channel configuration. Please try again.',
+          content: `✅ Earthquake alerts will be sent to <#${channel.id}>!\n⚠️ Note: There was an issue saving to the database, but your configuration will be stored when connection is restored.`,
           flags: 64
         });
       }

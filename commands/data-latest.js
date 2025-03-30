@@ -1,20 +1,17 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
-import fetch from 'node-fetch';
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 
-// Thailand and nearby region coordinates
 const THAILAND_REGION = {
-  minLat: 5,   // Southern Thailand/Malaysia border
-  maxLat: 22,  // Northern Thailand/Myanmar/Laos
-  minLng: 97,  // Western Thailand/Myanmar border
-  maxLng: 106  // Eastern Thailand/Laos/Cambodia border
+  minLat: 5,
+  maxLat: 22,
+  minLng: 97,
+  maxLng: 106
 };
 
-// Broader SEA region coordinates
 const SEA_REGIONS = {
-  minLat: -11, // Southern Indonesia
-  maxLat: 28,  // Northern Myanmar
-  minLng: 92,  // Western Myanmar
-  maxLng: 141  // Eastern Indonesia/Philippines
+  minLat: -11,
+  maxLat: 28,
+  minLng: 92,
+  maxLng: 141
 };
 
 const THAILAND_NEIGHBORS = [
@@ -92,7 +89,7 @@ function formatTime(timestamp) {
   });
 }
 
-export default {
+module.exports = {
   data: new SlashCommandBuilder()
     .setName('data-latest')
     .setDescription('Display latest earthquake data')
@@ -120,20 +117,38 @@ export default {
       const count = interaction.options.getInteger('count') || 3; // Default to 3 if not provided
       const region = interaction.options.getString('region') || 'global'; // Default to global if not provided
       
-      // Fetch data
-      const response = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson', {
+      // Determine which API endpoint to use based on region
+      // For Thailand region, we'll use a feed that includes smaller earthquakes (M2.5+)
+      let apiEndpoint = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson';
+      if (region === 'thailand') {
+        apiEndpoint = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson';
+      }
+      
+      // Fetch data with increased timeout and better error handling
+      const response = await fetch(apiEndpoint, {
         headers: {
           'Accept': 'application/json',
           'User-Agent': 'EarthquakeAlertBot/1.0'
         },
-        timeout: 10000 // 10-second timeout
+        timeout: 30000 // Increased timeout to 30 seconds
+      }).catch(error => {
+        console.error('Fetch error:', error);
+        throw new Error('Failed to fetch earthquake data. Network error.');
       });
       
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       
-      const data = await response.json();
+      const data = await response.json().catch(error => {
+        console.error('JSON parsing error:', error);
+        throw new Error('Failed to parse earthquake data.');
+      });
+      
+      // Check if data has the expected structure
+      if (!data || !data.features || !Array.isArray(data.features)) {
+        throw new Error('Invalid data format received from USGS API');
+      }
       
       // Filter earthquakes based on region
       let filteredEarthquakes = data.features;
@@ -146,7 +161,7 @@ export default {
           const location = quake.properties.place || '';
           
           return isInThailandRegion(longitude, latitude) || 
-                 calculateDistance(BANGKOK_COORDS.latitude, BANGKOK_COORDS.longitude, latitude, longitude) <= 1000;
+                 calculateDistance(BANGKOK_COORDS.latitude, BANGKOK_COORDS.longitude, latitude, longitude) <= 2200;
         });
       } else if (region === 'sea') {
         filteredEarthquakes = data.features.filter(quake => {
