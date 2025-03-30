@@ -16,11 +16,13 @@ export async function connectDB() {
     client = await MongoClient.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
-      ssl: true,
+      tls: true,
       tlsAllowInvalidCertificates: true,
       retryWrites: true,
       w: 'majority',
-      retryReads: true
+      retryReads: true,
+      replicaSet: 'atlas-kgpspy-shard-0',
+      readPreference: 'primary'
     });
 
     // Test the connection
